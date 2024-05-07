@@ -1,20 +1,31 @@
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { CreatePokemonDto } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
 import { Pokemon } from './entities/pokemon.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+
 
 
 @Injectable()
 export class PokemonService {
 
+  private defaultLimited:number;
+
   constructor( 
 
     @InjectModel( Pokemon.name )
-    private readonly pokemonModel: Model<Pokemon>
+    private readonly pokemonModel: Model<Pokemon>,
 
-   ){}
+    private readonly configService: ConfigService,
+
+   ){
+    this.defaultLimited = this.configService.get<number>('defaultLimit')
+    // console.log({ defaultLimited: this.configService.get<number>('defaultLimit') });
+    
+   }
 
   //   CREAR UN POKEMON
   async create(createPokemonDto: CreatePokemonDto): Promise<Pokemon> {
@@ -30,9 +41,22 @@ export class PokemonService {
     }  
   }
 
-  findAll() {
-    return `This action returns all pokemon`;
+
+
+  //   TRAE TODO LOS POKEMON PAGINADOS
+  findAll( paginationDto: PaginationDto ) {
+
+    const {limit= this.defaultLimited, offset = 0} = paginationDto;
+    return this.pokemonModel.find( )
+    .limit( limit )
+    .skip( offset)
+    .sort({
+      no:1
+    })
+    .select('-__v')  
   }
+
+
 
   //   TRAER POR NUMERO, ID, NAME 
   async findOne( term: string ) {
@@ -60,6 +84,9 @@ export class PokemonService {
     return pokemon;
   }
 
+
+
+
   //   ACTUALIZAR UN POKEMON
   async update(term: string, updatePokemonDto: UpdatePokemonDto) {
 
@@ -78,6 +105,9 @@ export class PokemonService {
     
   }
 
+
+
+
   //   ELIMINAR POKEMON
   async remove(id: string) {
 
@@ -86,6 +116,10 @@ export class PokemonService {
         throw new BadRequestException(`Pokemon with Id ¨${ id }¨ not found `);
       return `${id} has been successfully removed`;
   }
+
+
+
+
 
   private handleExeptions( error: any ){
 
